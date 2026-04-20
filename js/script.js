@@ -1,92 +1,61 @@
+// Supabase Cloud Storage
+const SUPABASE_URL = 'https://onelaklaihecqvnrkaro.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9uZWxha2xhaWhlY3F2bnJrYXJvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUxMzQxMzEsImV4cCI6MjA2MDcxMDEzMX0.95MjlxOTA3OXO.nZwbtzOKn2zYHt7njzZqhJfiMpmuaEdmkVjNHRwkiE4';
+const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
 class StorageManager {
     constructor() {
-        this.dbName = 'HeartGalleryDB';
-        this.dbVersion = 3; // Keep version 3 to ensure the audio fix is active
-        this.db = null;
+        this.bucket = 'interactive-gallery';
     }
 
     async init() {
-        return new Promise((resolve, reject) => {
-            const request = indexedDB.open(this.dbName, this.dbVersion);
-
-            request.onupgradeneeded = (event) => {
-                const db = event.target.result;
-                if (!db.objectStoreNames.contains('photos')) {
-                    db.createObjectStore('photos', { keyPath: 'id', autoIncrement: true });
-                }
-                if (db.objectStoreNames.contains('audio')) {
-                    db.deleteObjectStore('audio');
-                }
-                db.createObjectStore('audio', { keyPath: 'id', autoIncrement: true });
-            };
-
-            request.onsuccess = (event) => {
-                this.db = event.target.result;
-                resolve();
-            };
-
-            request.onerror = (event) => reject('IndexedDB Error: ' + event.target.errorCode);
-        });
+        console.log('Conectado a Supabase ☁️');
     }
 
     async savePhoto(blob) {
-        return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction(['photos'], 'readwrite');
-            const store = transaction.objectStore('photos');
-            const request = store.add({ blob, timestamp: Date.now() });
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
-        });
+        const fileName = `photo_${Date.now()}.jpg`;
+        const { error } = await _supabase.storage.from(this.bucket).upload(fileName, blob);
+        if (error) throw error;
+        const { error: dbError } = await _supabase.from('gallery_items').insert([{ type: 'photo', storage_path: fileName, name: fileName }]);
+        if (dbError) throw dbError;
     }
 
     async getPhotos() {
-        return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction(['photos'], 'readonly');
-            const store = transaction.objectStore('photos');
-            const request = store.getAll();
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
+        const { data, error } = await _supabase.from('gallery_items').select('*').eq('type', 'photo').order('created_at', { ascending: false });
+        if (error) throw error;
+        return data.map(item => {
+            const { data: { publicUrl } } = _supabase.storage.from(this.bucket).getPublicUrl(item.storage_path);
+            return { ...item, url: publicUrl };
         });
     }
 
     async deletePhoto(id) {
-        return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction(['photos'], 'readwrite');
-            const store = transaction.objectStore('photos');
-            const request = store.delete(id);
-            request.onsuccess = () => resolve();
-            request.onerror = () => reject(request.error);
-        });
+        const { data } = await _supabase.from('gallery_items').select('storage_path').eq('id', id).single();
+        if (data) await _supabase.storage.from(this.bucket).remove([data.storage_path]);
+        await _supabase.from('gallery_items').delete().eq('id', id);
     }
 
     async saveAudio(blob, name) {
-        return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction(['audio'], 'readwrite');
-            const store = transaction.objectStore('audio');
-            const request = store.add({ blob, name, timestamp: Date.now() });
-            request.onsuccess = () => resolve();
-            request.onerror = () => reject(request.error);
-        });
+        const fileName = `audio_${Date.now()}_${name}`;
+        const { error } = await _supabase.storage.from(this.bucket).upload(fileName, blob);
+        if (error) throw error;
+        const { error: dbError } = await _supabase.from('gallery_items').insert([{ type: 'audio', storage_path: fileName, name }]);
+        if (dbError) throw dbError;
     }
 
     async getAudios() {
-        return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction(['audio'], 'readonly');
-            const store = transaction.objectStore('audio');
-            const request = store.getAll();
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
+        const { data, error } = await _supabase.from('gallery_items').select('*').eq('type', 'audio').order('created_at', { ascending: false });
+        if (error) throw error;
+        return data.map(item => {
+            const { data: { publicUrl } } = _supabase.storage.from(this.bucket).getPublicUrl(item.storage_path);
+            return { ...item, url: publicUrl };
         });
     }
 
     async deleteAudio(id) {
-        return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction(['audio'], 'readwrite');
-            const store = transaction.objectStore('audio');
-            const request = store.delete(id);
-            request.onsuccess = () => resolve();
-            request.onerror = () => reject(request.error);
-        });
+        const { data } = await _supabase.from('gallery_items').select('storage_path').eq('id', id).single();
+        if (data) await _supabase.storage.from(this.bucket).remove([data.storage_path]);
+        await _supabase.from('gallery_items').delete().eq('id', id);
     }
 }
 
@@ -374,14 +343,14 @@ async function loadGallery() {
         return;
     }
 
-    photos.reverse().forEach((photo, index) => {
-        const url = URL.createObjectURL(photo.blob);
+    photos.forEach((photo, index) => {
+        const url = photo.url; // Use Supabase public URL directly
         const card = document.createElement('div');
         card.className = 'photo-card';
         card.innerHTML = `
             <img src="${url}" alt="Gallery Photo">
             <div class="photo-overlay">
-                <button class="btn-delete" onclick="event.stopPropagation(); deletePhoto(${photo.id})">×</button>
+                <button class="btn-delete" onclick="event.stopPropagation(); deletePhoto('${photo.id}')">×</button>
             </div>
         `;
         card.addEventListener('click', () => {
@@ -471,8 +440,8 @@ async function loadMusicList() {
                     <span class="music-name">${track.name}</span>
                 </div>
                 <div class="music-actions">
-                    <button class="btn-sm btn-primary" onclick="playTrack(${track.id})">▶️</button>
-                    <button class="btn-sm" onclick="removeTrack(${track.id})">🗑️</button>
+                    <button class="btn-sm btn-primary" onclick="playTrack('${track.id}')">▶️</button>
+                    <button class="btn-sm" onclick="removeTrack('${track.id}')">🗑️</button>
                 </div>
             `;
             musicListContainer.appendChild(item);
@@ -488,8 +457,7 @@ window.playTrack = async (id) => {
         const track = audios.find(t => t.id === id);
         if (track) {
             console.log(`Reproduciendo: ${track.name}`);
-            const url = URL.createObjectURL(track.blob);
-            bgAudio.src = url;
+            bgAudio.src = track.url; // Use Supabase public URL directly
             bgAudio.load();
             bgAudio.play().then(() => {
                 playPauseBtn.innerText = '⏸️';
