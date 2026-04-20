@@ -1,98 +1,79 @@
-/**
- * Logic for Interactive Gallery with persistent storage (IndexedDB)
- * and floral/heart animations.
- */
+// Supabase Configuration - REPLACE WITH YOUR OWN KEYS
+const SUPABASE_URL = 'TU_SUPABASE_URL';
+const SUPABASE_KEY = 'TU_SUPABASE_ANON_KEY';
+const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 class StorageManager {
     constructor() {
-        this.dbName = 'HeartGalleryDB';
-        this.dbVersion = 3; // Force upgrade to re-create audio store
-        this.db = null;
+        this.bucket = 'interactive-gallery';
     }
 
     async init() {
-        return new Promise((resolve, reject) => {
-            const request = indexedDB.open(this.dbName, this.dbVersion);
-
-            request.onupgradeneeded = (event) => {
-                const db = event.target.result;
-                if (!db.objectStoreNames.contains('photos')) {
-                    db.createObjectStore('photos', { keyPath: 'id', autoIncrement: true });
-                }
-                // If audio store exists but needs upgrade to autoIncrement, we recreate it
-                if (db.objectStoreNames.contains('audio')) {
-                    db.deleteObjectStore('audio');
-                }
-                db.createObjectStore('audio', { keyPath: 'id', autoIncrement: true });
-            };
-
-            request.onsuccess = (event) => {
-                this.db = event.target.result;
-                resolve();
-            };
-
-            request.onerror = (event) => reject('IndexedDB Error: ' + event.target.errorCode);
-        });
+        console.log("Conectado a la nube de Supabase ☁️");
     }
 
     async savePhoto(blob) {
-        return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction(['photos'], 'readwrite');
-            const store = transaction.objectStore('photos');
-            const request = store.add({ blob, timestamp: Date.now() });
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
-        });
+        const fileName = `photo_${Date.now()}.jpg`;
+        const { data, error } = await _supabase.storage.from(this.bucket).upload(fileName, blob);
+        if (error) throw error;
+
+        const { error: dbError } = await _supabase.from('gallery_items').insert([{
+            type: 'photo',
+            storage_path: fileName,
+            name: fileName
+        }]);
+        if (dbError) throw dbError;
     }
 
     async getPhotos() {
-        return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction(['photos'], 'readonly');
-            const store = transaction.objectStore('photos');
-            const request = store.getAll();
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
+        const { data, error } = await _supabase.from('gallery_items').select('*').eq('type', 'photo').order('created_at', { ascending: false });
+        if (error) throw error;
+        
+        // Generate public URLs for all photos
+        return data.map(item => {
+            const { data: { publicUrl } } = _supabase.storage.from(this.bucket).getPublicUrl(item.storage_path);
+            return { ...item, url: publicUrl };
         });
     }
 
     async deletePhoto(id) {
-        return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction(['photos'], 'readwrite');
-            const store = transaction.objectStore('photos');
-            const request = store.delete(id);
-            request.onsuccess = () => resolve();
-            request.onerror = () => reject(request.error);
-        });
+        // Find path first
+        const { data } = await _supabase.from('gallery_items').select('storage_path').eq('id', id).single();
+        if (data) {
+            await _supabase.storage.from(this.bucket).remove([data.storage_path]);
+        }
+        await _supabase.from('gallery_items').delete().eq('id', id);
     }
 
     async saveAudio(blob, name) {
-        return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction(['audio'], 'readwrite');
-            const store = transaction.objectStore('audio');
-            const request = store.add({ blob, name, timestamp: Date.now() });
-            request.onsuccess = () => resolve();
-            request.onerror = () => reject(request.error);
-        });
+        const fileName = `audio_${Date.now()}_${name}`;
+        const { data, error } = await _supabase.storage.from(this.bucket).upload(fileName, blob);
+        if (error) throw error;
+
+        const { error: dbError } = await _supabase.from('gallery_items').insert([{
+            type: 'audio',
+            storage_path: fileName,
+            name: name
+        }]);
+        if (dbError) throw dbError;
     }
 
     async getAudios() {
-        return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction(['audio'], 'readonly');
-            const store = transaction.objectStore('audio');
-            const request = store.getAll();
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
+        const { data, error } = await _supabase.from('gallery_items').select('*').eq('type', 'audio').order('created_at', { ascending: false });
+        if (error) throw error;
+
+        return data.map(item => {
+            const { data: { publicUrl } } = _supabase.storage.from(this.bucket).getPublicUrl(item.storage_path);
+            return { ...item, url: publicUrl, blob: null }; // We use publicUrl directly
         });
     }
 
     async deleteAudio(id) {
-        return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction(['audio'], 'readwrite');
-            const store = transaction.objectStore('audio');
-            const request = store.delete(id);
-            request.onsuccess = () => resolve();
-            request.onerror = () => reject(request.error);
-        });
+        const { data } = await _supabase.from('gallery_items').select('storage_path').eq('id', id).single();
+        if (data) {
+            await _supabase.storage.from(this.bucket).remove([data.storage_path]);
+        }
+        await _supabase.from('gallery_items').delete().eq('id', id);
     }
 }
 
