@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galería de Corazones y Flores | Mi Espacio Mágico</title>
+    <meta name="description" content="Una galería interactiva llena de amor, flores y música. Personaliza tu espacio con fotos y canciones favoritas.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="animation-container"></div>
+    
+    <header id="hero">
+        <div class="hero-content scroll-reveal">
+            <h1 class="hero-title">Felices 24</h1>
+            <h2 class="hero-subtitle">Mi Amor ❤️</h2>
+            <div class="hero-decoration">🌸✨🌸</div>
+        </div>
+        <div class="scroll-indicator">
+            <span>Baja para ver nuestra historia</span>
+            <div class="arrow">↓</div>
+        </div>
+    </header>
+
+    <main>
+        <section id="gallery-controls" class="glass-card scroll-reveal">
+            <div class="control-group">
+                <div class="main-buttons">
+                    <label for="photo-upload" class="btn btn-primary">
+                        <span>Añadir Foto</span>
+                        <input type="file" id="photo-upload" accept="image/*" multiple hidden>
+                    </label>
+                    <button id="toggle-edit" class="btn btn-secondary">Modo Edición: OFF</button>
+                </div>
+                <div class="music-controller">
+                    <button id="btn-manage-music" class="btn btn-secondary">
+                        <span id="music-count">Gestionar Música (0)</span>
+                    </button>
+                    <div id="audio-panel" class="hidden">
+                        <button id="play-pause" class="btn-icon">▶️</button>
+                        <button id="stop-music" class="btn-icon">⏹️</button>
+                        <marquee id="song-name">Selecciona una canción en el gestor</marquee>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="photo-gallery" class="gallery-grid">
+            <!-- Photos will be injected here -->
+            <div id="empty-state" class="empty-state">
+                <p>Tu jardín de fotos está vacío. ¡Añade algunas!</p>
+            </div>
+        </section>
+
+        <!-- Rose Section -->
+        <section id="special-moment" class="scroll-reveal">
+            <div class="glass-card rose-container">
+                <button id="btn-reveal-rose" class="btn btn-primary pulse">Tocar para una Sorpresa ✨</button>
+                <div id="rose-drawing" class="hidden">
+                    <svg viewBox="0 0 100 100" class="rose-svg">
+                        <!-- Stem -->
+                        <path class="stem" fill="none" stroke="#2d6a4f" stroke-width="0.8" d="M50,95 Q48,70 50,45" />
+                        <!-- Leaves -->
+                        <path class="leaf" fill="none" stroke="#2d6a4f" stroke-width="0.5" d="M50,75 Q35,70 30,80 Q40,85 50,75" />
+                        <path class="leaf" fill="none" stroke="#2d6a4f" stroke-width="0.5" d="M50,65 Q65,60 70,70 Q60,75 50,65" />
+                        <!-- Petals (Simplified but more floral) -->
+                        <path id="rose-path" fill="none" stroke="#ff4d6d" stroke-width="0.8" d="M50,45 C50,45 35,35 35,25 C35,15 50,15 50,25 C50,15 65,15 65,25 C65,35 50,45 50,45 M50,45 C50,45 40,55 30,45 C20,35 25,20 40,25 M50,45 C50,45 60,55 70,45 C80,35 75,20 60,25" />
+                        <circle cx="50" cy="28" r="3" fill="none" stroke="#ff4d6d" class="leaf" />
+                    </svg>
+                </div>
+                <div id="poem-text" class="hidden">
+                    <h2 class="poem-title">La voz de mi cabeza</h2>
+                    <p class="poem-content"></p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <audio id="bg-audio" loop></audio>
+
+    <footer class="glass-card scroll-reveal">
+        <p>Feliz cumpleaños mi princesa ❤️</p>
+    </footer>
+
+    <!-- Interactive Photo Modal -->
+    <div id="photo-modal" class="hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div id="modal-photo-container">
+                <img id="modal-img" src="" alt="Selected Photo">
+            </div>
+            <div id="modal-drawing-container">
+                <!-- SVG Animations will be injected here -->
+            </div>
+            <p id="modal-text" class="love-word"></p>
+            <button id="close-modal" class="btn-icon">×</button>
+        </div>
+    </div>
+
+    <!-- Music Management Modal -->
+    <div id="music-modal" class="hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content music-manager">
+            <h2 class="poem-title">Tu Biblioteca Musical</h2>
+            <div class="upload-section">
+                <button class="btn btn-primary" onclick="document.getElementById('music-upload').click()">
+                    Añadir Canción 🎵
+                </button>
+                <input type="file" id="music-upload" accept="audio/*,audio/mpeg,audio/ogg,audio/aac" multiple style="display:none">
+                <p class="format-note">Formatos: MP3, M4A, WAV, WhatsApp</p>
+            </div>
+            <div id="music-list" class="music-list">
+                <!-- Songs will be listed here -->
+            </div>
+            <button id="close-music-modal" class="btn-icon">×</button>
+        </div>
+    </div>
+
+    <script src="js/script.js"></script>
+</body>
+</html>
