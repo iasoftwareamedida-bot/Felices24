@@ -291,11 +291,49 @@ function revealRoseAndPoem() {
 
 async function handlePhotoUpload(e) {
     const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+    showToast(`⏳ Subiendo ${files.length} foto(s)... por favor espera`);
     for (const file of files) {
-        const optimizedBlob = await optimizeImage(file);
-        await storage.savePhoto(optimizedBlob);
+        try {
+            const optimizedBlob = await optimizeImage(file);
+            await storage.savePhoto(optimizedBlob);
+        } catch (err) {
+            console.error('Error subiendo foto:', err);
+            showToast('❌ Error al subir una foto');
+        }
     }
-    loadGallery();
+    showToast('✅ ¡Fotos guardadas en la nube!');
+    await loadGallery();
+    e.target.value = '';
+}
+
+function showToast(message) {
+    let toast = document.getElementById('upload-toast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'upload-toast';
+        toast.style.cssText = `
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(20,20,40,0.95);
+            color: #fff;
+            padding: 14px 28px;
+            border-radius: 50px;
+            font-family: Outfit,sans-serif;
+            font-size: 15px;
+            z-index: 9999;
+            box-shadow: 0 8px 32px rgba(255,77,109,0.3);
+            border: 1px solid rgba(255,77,109,0.4);
+            transition: opacity 0.4s;
+        `;
+        document.body.appendChild(toast);
+    }
+    toast.innerText = message;
+    toast.style.opacity = '1';
+    clearTimeout(toast._hideTimer);
+    toast._hideTimer = setTimeout(() => { toast.style.opacity = '0'; }, 3000);
 }
 
 async function optimizeImage(file) {
@@ -400,6 +438,8 @@ window.deletePhoto = async (id) => {
 
 async function handleMusicUpload(e) {
     const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+    showToast(`⏳ Subiendo ${files.length} canción(es)... por favor espera`);
     console.log(`Intentando subir ${files.length} archivos de audio...`);
     for (const file of files) {
         try {
@@ -407,10 +447,13 @@ async function handleMusicUpload(e) {
             console.log(`Subido: ${file.name}`);
         } catch (err) {
             console.error(`Error al subir ${file.name}:`, err);
+            showToast(`❌ Error al subir: ${file.name}`);
         }
     }
-    loadSavedMusic();
-    loadMusicList();
+    showToast('✅ ¡Canciones guardadas en la nube! 🎵');
+    e.target.value = '';
+    await loadSavedMusic();
+    await loadMusicList();
 }
 
 async function loadSavedMusic() {
