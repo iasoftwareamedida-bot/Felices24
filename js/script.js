@@ -538,4 +538,29 @@ function stopMusic() {
     playPauseBtn.innerText = '▶️';
 }
 
+window.deletePhoto = async (id) => {
+    try {
+        showToast('🗑️ Eliminando foto...');
+        await storage.deletePhoto(id);
+        showToast('✅ Foto eliminada');
+        await loadGallery();
+    } catch (err) {
+        console.error('Error al eliminar foto:', err);
+        showToast('❌ Error al eliminar la foto');
+    }
+};
+
+window.removeTrack = async (id) => {
+    try {
+        showToast('🗑️ Eliminando canción...');
+        await storage.deleteAudio(id);
+        showToast('✅ Canción eliminada');
+        await loadSavedMusic();
+        await loadMusicList();
+    } catch (err) {
+        console.error('Error al eliminar canción:', err);
+        showToast('❌ Error al eliminar la canción');
+    }
+};
+
 init();
