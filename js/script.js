@@ -1,6 +1,6 @@
 // Supabase Cloud Storage
 const SUPABASE_URL = 'https://onelaklaihecqvnrkaro.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9uZWxha2xhaWhlY3F2bnJrYXJvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUxMzQxMzEsImV4cCI6MjA2MDcxMDEzMX0.95MjlxOTA3OXO.nZwbtzOKn2zYHt7njzZqhJfiMpmuaEdmkVjNHRwkiE4';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9uZWxha2xhaWhlY3F2bnJrYXJvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY2NDMwNzksImV4cCI6MjA5MjIxOTA3OX0.nZwbtzOKn2zYHt7njzZqhJfiMpmuaEdmkVjNHRwkiE4';
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 class StorageManager {
